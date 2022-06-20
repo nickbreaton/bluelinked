@@ -4,7 +4,11 @@ import Bluelinky from 'bluelinky';
 import type { AmericanBlueLinkyConfig } from 'bluelinky/dist/controllers/american.controller';
 import type AmericanVehicle from 'bluelinky/dist/vehicles/american.vehicle';
 
-export const handle: Handle = async ({ event, resolve }) => {
+let client: Bluelinky<AmericanBlueLinkyConfig, 'US', AmericanVehicle>;
+
+async function createBluelinkyClient() {
+	console.log('Logging in...');
+
 	const client = new Bluelinky<AmericanBlueLinkyConfig, 'US', AmericanVehicle>({
 		brand: 'hyundai',
 		region: 'US',
@@ -18,7 +22,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 		client.on('ready', () => resolve());
 	});
 
+	return client;
+}
+
+export const handle: Handle = async ({ event, resolve }) => {
+	if (process.env.SHARED_SECRET !== event.request.headers.get('Shared-Secret')) {
+		return new Response(null, { status: 403 });
+	}
+
+	client ??= await createBluelinkyClient();
 	const [vehicle] = await client.getVehicles();
+
+	event.locals.client = client;
 	event.locals.vehicle = vehicle;
 
 	return await resolve(event);
