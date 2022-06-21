@@ -5,6 +5,7 @@ import type { AmericanBlueLinkyConfig } from 'bluelinky/dist/controllers/america
 import type AmericanVehicle from 'bluelinky/dist/vehicles/american.vehicle';
 
 let client: Bluelinky<AmericanBlueLinkyConfig, 'US', AmericanVehicle>;
+let vehicle: AmericanVehicle;
 
 async function createBluelinkyClient() {
 	console.log('Logging in...');
@@ -31,7 +32,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	client ??= await createBluelinkyClient();
-	const [vehicle] = await client.getVehicles();
+	vehicle ??= await client.getVehicles().then((vehicles) => vehicles[0]);
 
 	event.locals.client = client;
 	event.locals.vehicle = vehicle;
