@@ -31,6 +31,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"bluelinky": "^7.6.6"
+		"bluelinky": "^7.6.6",
+		"got": "^12.1.0"
 	}
 }
