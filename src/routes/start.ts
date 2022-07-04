@@ -7,7 +7,25 @@ enum SeatTemperature {
 	Low = 6
 }
 
-export const post: RequestHandler = async ({ locals }) => {
+interface StartConfig {
+	airTemp: number;
+	defrost: boolean;
+	seatHeater: boolean;
+}
+
+const WINTER_CONFIG: StartConfig = {
+	airTemp: 78,
+	defrost: true,
+	seatHeater: true
+};
+
+const SUMMER_CONFIG: StartConfig = {
+	airTemp: 62,
+	defrost: false,
+	seatHeater: false
+};
+
+export const post: RequestHandler = async ({ locals, request: { headers } }) => {
 	// @ts-ignore
 	const request: Got = locals.vehicle._request.bind(locals.vehicle);
 
@@ -15,6 +33,33 @@ export const post: RequestHandler = async ({ locals }) => {
 	const getDefaultHeaders: () => Record<string, string> = locals.vehicle.getDefaultHeaders.bind(
 		locals.vehicle
 	);
+
+	const currentTemperature = parseFloat(headers.get('current-temperature')!);
+
+	if (!currentTemperature) {
+		return { status: 400, body: 'Invalid or missing temperature' };
+	}
+
+	const startConfig = currentTemperature > 64 ? SUMMER_CONFIG : WINTER_CONFIG;
+
+	const requestConfig = {
+		airTemp: {
+			unit: 1,
+			value: String(startConfig.airTemp)
+		},
+		defrost: startConfig.defrost,
+		heating1: +startConfig.defrost,
+		seatHeaterVentInfo: startConfig.seatHeater
+			? {
+					drvSeatHeatState: SeatTemperature.High,
+					astSeatHeatState: SeatTemperature.High
+			  }
+			: null
+	};
+
+	if (headers.get('debug')) {
+		return { status: 200, body: requestConfig };
+	}
 
 	const res = await request('/ac/v2/rcs/rsc/start', {
 		method: 'POST',
@@ -25,20 +70,11 @@ export const post: RequestHandler = async ({ locals }) => {
 		},
 		body: JSON.stringify({
 			Ims: 0,
-			airCtrl: 1, // 0 or 1
-			airTemp: {
-				unit: 1,
-				value: '65'
-			},
-			defrost: false,
-			heating1: 1, // 0 or 1
-			igniOnDuration: 10,
+			airCtrl: 1,
 			username: locals.vehicle.userConfig.username,
 			vin: locals.vehicle.vehicleConfig.vin,
-			seatHeaterVentInfo: {
-				drvSeatHeatState: SeatTemperature.High,
-				astSeatHeatState: SeatTemperature.High
-			}
+			igniOnDuration: 10,
+			...requestConfig
 		})
 	});
 
