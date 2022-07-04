@@ -25,14 +25,12 @@ const SUMMER_CONFIG: StartConfig = {
 	seatHeater: false
 };
 
-export const post: RequestHandler = async ({ locals, request: { headers } }) => {
+export const post: RequestHandler = async ({ locals: { vehicle }, request: { headers } }) => {
 	// @ts-ignore
-	const request: Got = locals.vehicle._request.bind(locals.vehicle);
+	const got: Got = vehicle._request.bind(vehicle);
 
 	// @ts-ignore
-	const getDefaultHeaders: () => Record<string, string> = locals.vehicle.getDefaultHeaders.bind(
-		locals.vehicle
-	);
+	const defaultHeaders: Record<string, string> = vehicle.getDefaultHeaders();
 
 	const currentTemperature = parseFloat(headers.get('current-temperature')!);
 
@@ -61,18 +59,18 @@ export const post: RequestHandler = async ({ locals, request: { headers } }) => 
 		return { status: 200, body: requestConfig };
 	}
 
-	const res = await request('/ac/v2/rcs/rsc/start', {
+	const res = await got('/ac/v2/rcs/rsc/start', {
 		method: 'POST',
 		headers: {
-			...getDefaultHeaders(),
+			...defaultHeaders,
 			offset: '-4',
 			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify({
 			Ims: 0,
 			airCtrl: 1,
-			username: locals.vehicle.userConfig.username,
-			vin: locals.vehicle.vehicleConfig.vin,
+			username: vehicle.userConfig.username,
+			vin: vehicle.vehicleConfig.vin,
 			igniOnDuration: 10,
 			...requestConfig
 		})
