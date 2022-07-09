@@ -14,13 +14,13 @@ interface StartConfig {
 }
 
 const WINTER_CONFIG: StartConfig = {
-	airTemp: 78,
+	airTemp: 74,
 	defrost: true,
 	seatHeater: true
 };
 
 const SUMMER_CONFIG: StartConfig = {
-	airTemp: 62,
+	airTemp: 68,
 	defrost: false,
 	seatHeater: false
 };
