@@ -2,7 +2,7 @@
 	"name": "shortkeys",
 	"version": "0.0.1",
 	"scripts": {
-		"dev": "dotenv svelte-kit dev",
+		"dev": "dotenv vite dev",
 		"build": "svelte-kit build",
 		"package": "svelte-kit package",
 		"preview": "svelte-kit preview",
@@ -27,7 +27,8 @@
 		"svelte-check": "^2.8.0",
 		"svelte-preprocess": "^4.10.7",
 		"tslib": "^2.4.0",
-		"typescript": "^4.7.4"
+		"typescript": "^4.7.4",
+		"vite": "^2.9.14"
 	},
 	"type": "module",
 	"dependencies": {
