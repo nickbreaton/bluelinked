@@ -4,6 +4,7 @@
 	"scripts": {
 		"dev": "dotenv vite dev",
 		"build": "vite build",
+		"test": "vitest",
 		"package": "svelte-kit package",
 		"preview": "svelte-kit preview",
 		"prepare": "svelte-kit sync",
