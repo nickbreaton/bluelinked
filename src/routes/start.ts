@@ -1,4 +1,4 @@
-import type { RequestHandler } from '@sveltejs/kit';
+import type { RequestEvent } from '@sveltejs/kit';
 import type { Got } from 'got';
 
 enum SeatTemperature {
@@ -25,7 +25,7 @@ const SUMMER_CONFIG: StartConfig = {
 	seatHeater: false
 };
 
-export const post: RequestHandler = async ({ locals: { vehicle }, request: { headers } }) => {
+export const POST = async ({ locals: { vehicle }, request: { headers } }: RequestEvent) => {
 	// @ts-ignore
 	const got: Got = vehicle._request.bind(vehicle);
 

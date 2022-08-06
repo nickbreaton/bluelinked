@@ -1,6 +1,6 @@
-import type { RequestHandler } from '@sveltejs/kit';
+import type { RequestEvent } from '@sveltejs/kit';
 
-export const get: RequestHandler = async ({ locals }) => {
+export const GET = async ({ locals }: RequestEvent) => {
 	return {
 		body: await locals.vehicle.status({ parsed: false, refresh: false })
 	};
