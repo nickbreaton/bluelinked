@@ -1,3 +1,4 @@
+import { json as json$1 } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 import type { Got } from 'got';
 
@@ -35,7 +36,7 @@ export const POST = async ({ locals: { vehicle }, request: { headers } }: Reques
 	const currentTemperature = parseFloat(headers.get('current-temperature')!);
 
 	if (!currentTemperature) {
-		return { status: 400, body: 'Invalid or missing temperature' };
+		return new Response('Invalid or missing temperature', { status: 400 });
 	}
 
 	const startConfig = currentTemperature > 64 ? SUMMER_CONFIG : WINTER_CONFIG;
@@ -56,6 +57,9 @@ export const POST = async ({ locals: { vehicle }, request: { headers } }: Reques
 	};
 
 	if (headers.get('debug')) {
+		throw new Error("@migration task: Migrate this return statement (https://github.com/sveltejs/kit/discussions/5774#discussioncomment-3292701)");
+		// Suggestion (check for correctness before using):
+		// return json$1(requestConfig);
 		return { status: 200, body: requestConfig };
 	}
 
@@ -76,5 +80,8 @@ export const POST = async ({ locals: { vehicle }, request: { headers } }: Reques
 		})
 	});
 
+	throw new Error("@migration task: Migrate this return statement (https://github.com/sveltejs/kit/discussions/5774#discussioncomment-3292701)");
+	// Suggestion (check for correctness before using):
+	// return new Response(res.statusMessage, { status: res.statusCode });
 	return { status: res.statusCode, body: res.statusMessage };
 };
