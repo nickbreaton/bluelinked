@@ -1,4 +1,4 @@
-import { json as json$1 } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 import type { Got } from 'got';
 
@@ -57,10 +57,7 @@ export const POST = async ({ locals: { vehicle }, request: { headers } }: Reques
 	};
 
 	if (headers.get('debug')) {
-		throw new Error("@migration task: Migrate this return statement (https://github.com/sveltejs/kit/discussions/5774#discussioncomment-3292701)");
-		// Suggestion (check for correctness before using):
-		// return json$1(requestConfig);
-		return { status: 200, body: requestConfig };
+		return json(requestConfig);
 	}
 
 	const res = await got('/ac/v2/rcs/rsc/start', {
@@ -80,8 +77,5 @@ export const POST = async ({ locals: { vehicle }, request: { headers } }: Reques
 		})
 	});
 
-	throw new Error("@migration task: Migrate this return statement (https://github.com/sveltejs/kit/discussions/5774#discussioncomment-3292701)");
-	// Suggestion (check for correctness before using):
-	// return new Response(res.statusMessage, { status: res.statusCode });
-	return { status: res.statusCode, body: res.statusMessage };
+	return new Response(res.statusMessage, { status: res.statusCode });
 };
