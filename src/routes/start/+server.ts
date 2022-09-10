@@ -39,7 +39,7 @@ export const POST = async ({ locals: { vehicle }, request: { headers } }: Reques
 		return new Response('Invalid or missing temperature', { status: 400 });
 	}
 
-	const startConfig = currentTemperature > 64 ? SUMMER_CONFIG : WINTER_CONFIG;
+	const startConfig = currentTemperature > 69 ? SUMMER_CONFIG : WINTER_CONFIG;
 
 	const requestConfig = {
 		airTemp: {
