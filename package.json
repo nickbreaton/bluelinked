@@ -7,5 +7,10 @@
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@effect/platform": "^0.69.24",
+    "@effect/platform-bun": "^0.49.26",
+    "effect": "^3.10.15"
   }
 }
