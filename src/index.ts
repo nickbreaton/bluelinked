@@ -5,14 +5,72 @@ import {
   HttpServer,
   HttpServerRequest,
   HttpServerResponse,
-  HttpApiError,
 } from "@effect/platform";
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
-import { Cause, Config, Effect, Layer, Option, pipe } from "effect";
+import { Array, Cause, Config, Effect, Layer, Option, pipe } from "effect";
+import { BlueLinky } from "bluelinky";
 
-const Start = Effect.gen(function* () {
-  return HttpServerResponse.text("Hello World 123");
+type VehicleStartOptions = Parameters<NonNullable<Awaited<ReturnType<BlueLinky["getVehicle"]>>>["start"]>[0];
+
+const Location = Effect.gen(function* () {
+  const { fetchLocation } = yield* BlueLinkyService;
+  return HttpServerResponse.text(JSON.stringify(yield* fetchLocation, null, 2));
 });
+
+class BlueLinkyService extends Effect.Service<BlueLinkyService>()("BlueLinkyService", {
+  effect: Effect.gen(function* () {
+    const config: BlueLinky["config"] = {
+      username: yield* Config.string("BLUELINKY_USERNAME"),
+      password: yield* Config.string("BLUELINKY_PASSWORD"),
+      brand: yield* Config.literal("hyundai", "kia")("BLUELINKY_BRAND"),
+      region: yield* Config.literal("US")("BLUELINKY_REGION"),
+      pin: yield* Config.string("BLUELINKY_PIN"),
+    };
+
+    const fetchClient = yield* pipe(
+      Effect.gen(function* () {
+        const client = new BlueLinky(config);
+        yield* Effect.logInfo("> BlueLinky client created");
+        yield* Effect.async((resolve) => {
+          client.on("ready", () => resolve(Effect.void));
+        });
+        yield* Effect.logInfo("< BlueLinky client ready");
+        return client;
+      }),
+      Effect.withSpan("fetchClient"),
+      Effect.cached, // creates the client lazily, but only once
+    );
+
+    const fetchVehicle = yield* pipe(
+      Effect.gen(function* () {
+        const client = yield* fetchClient;
+        yield* Effect.logInfo("> Fetching vehicles");
+        const vehicles = yield* Effect.promise(() => client.getVehicles());
+        const vehicle = yield* Array.get(vehicles, 0);
+        yield* Effect.logInfo(`< Fetched vehicle ${vehicle.vin()}`);
+        return vehicle;
+      }),
+      Effect.orDie,
+      Effect.withSpan("fetchVehicle"),
+      Effect.cached,
+    );
+
+    return {
+      fetchLocation: Effect.gen(function* () {
+        const vehicle = yield* fetchVehicle;
+        yield* Effect.logInfo(`> Fetching location`);
+        const location = yield* Effect.promise(() => vehicle.location());
+        yield* Effect.logInfo(`< Fetched location`);
+        return location;
+      }),
+      start: (options: VehicleStartOptions) =>
+        Effect.gen(function* () {
+          const vehicle = yield* fetchVehicle;
+          yield* Effect.promise(() => vehicle.start(options));
+        }),
+    };
+  }),
+}) {}
 
 const withAuthorization = HttpMiddleware.make((app) =>
   Effect.gen(function* () {
@@ -35,20 +93,18 @@ const withAuthorization = HttpMiddleware.make((app) =>
 );
 
 const router = HttpRouter.empty.pipe(
-  HttpRouter.post("/start", Start),
+  HttpRouter.post("/location", Location),
   HttpRouter.use(withAuthorization),
   HttpRouter.get("/", HttpServerResponse.text("Ok")),
 );
 
-const app = router.pipe(
+router.pipe(
   Effect.tapError(Effect.logError),
-  Effect.catchAllCause((cause) => {
-    return HttpServerResponse.text(Cause.pretty(cause), { status: 500 });
-  }),
+  Effect.catchAllCause((cause) => HttpServerResponse.text(Cause.pretty(cause), { status: 500 })),
   HttpServer.serve(),
   HttpServer.withLogAddress,
+  Layer.provide(BlueLinkyService.Default),
+  Layer.provide(BunHttpServer.layer({ port: 3000 })),
+  Layer.launch,
+  BunRuntime.runMain,
 );
-
-const ServerLive = BunHttpServer.layer({ port: 3000 });
-
-BunRuntime.runMain(Layer.launch(Layer.provide(app, ServerLive)));
