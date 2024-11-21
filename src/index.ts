@@ -10,6 +10,7 @@ import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
 import { Array, Cause, Config, Effect, Layer, Option, pipe } from "effect";
 import { BlueLinky } from "bluelinky";
 
+type BlueLinkConfig = ConstructorParameters<typeof BlueLinky>[0];
 type VehicleStartOptions = Parameters<NonNullable<Awaited<ReturnType<BlueLinky["getVehicle"]>>>["start"]>[0];
 
 const Location = Effect.gen(function* () {
@@ -19,7 +20,7 @@ const Location = Effect.gen(function* () {
 
 class BlueLinkyService extends Effect.Service<BlueLinkyService>()("BlueLinkyService", {
   effect: Effect.gen(function* () {
-    const config: BlueLinky["config"] = {
+    const config: BlueLinkConfig = {
       username: yield* Config.string("BLUELINKY_USERNAME"),
       password: yield* Config.string("BLUELINKY_PASSWORD"),
       brand: yield* Config.literal("hyundai", "kia")("BLUELINKY_BRAND"),
