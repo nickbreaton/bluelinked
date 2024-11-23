@@ -6,9 +6,10 @@ import {
   HttpApiMiddleware,
   HttpApiSecurity,
   HttpServer,
+  HttpApp,
 } from "@effect/platform";
-import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
-import { Array, Config, Effect, Layer, pipe, Redacted, Schema } from "effect";
+import { BunContext, BunHttpServer, BunRuntime } from "@effect/platform-bun";
+import { Array, Config, Effect, Layer, ManagedRuntime, pipe, Redacted, Schema } from "effect";
 import { BlueLinky } from "bluelinky";
 
 class Unauthorized extends Schema.TaggedError<Unauthorized>()("Unauthorized", {}) {}
@@ -127,14 +128,24 @@ const AppApiLive = HttpApiBuilder.api(AppApi).pipe(
   //
   Layer.provide(BaseApiLive),
   Layer.provide(AuthorizedApiLive),
-);
-
-const HttpLive = HttpApiBuilder.serve().pipe(
-  Layer.provide(AppApiLive),
   Layer.provide(AuthorizationMiddlewareLive),
   Layer.provide(BlueLinkyService.Default),
-  HttpServer.withLogAddress,
-  Layer.provide(BunHttpServer.layer({ port: 3000 })),
 );
 
-Layer.launch(HttpLive).pipe(BunRuntime.runMain);
+// const HttpLive = HttpApiBuilder.serve().pipe(
+//   Layer.provide(AppApiLive),
+//   Layer.provide(AuthorizationMiddlewareLive),
+//   Layer.provide(BlueLinkyService.Default),
+//   HttpServer.withLogAddress,
+//   Layer.provide(BunHttpServer.layer({ port: 3000 })),
+// );
+
+// const runtime = ManagedRuntime.make(AppApiLive);
+
+// Layer.launch(HttpLive).pipe(BunRuntime.runMain);
+
+const { handler } = HttpApiBuilder.toWebHandler(Layer.mergeAll(AppApiLive, HttpServer.layerContext));
+
+export default {
+  fetch: handler,
+};

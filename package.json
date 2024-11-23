@@ -2,8 +2,14 @@
   "name": "shortkeys",
   "module": "src/index.ts",
   "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "build": "bun build src/index.ts --target=node --outfile dist/index.js",
+    "deploy": "wrangler deploy dist/index.js"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "wrangler": "^3.90.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
