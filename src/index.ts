@@ -1,26 +1,36 @@
 import {
-  Headers,
-  HttpMiddleware,
-  HttpRouter,
+  HttpApi,
+  HttpApiBuilder,
+  HttpApiEndpoint,
+  HttpApiGroup,
+  HttpApiMiddleware,
+  HttpApiSecurity,
   HttpServer,
-  HttpServerRequest,
-  HttpServerResponse,
 } from "@effect/platform";
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
-import { Array, Cause, Config, Effect, Layer, Option, pipe } from "effect";
+import { Array, Cause, Config, Effect, Layer, Option, pipe, Redacted, Schema } from "effect";
 import { BlueLinky } from "bluelinky";
 
-type BlueLinkConfig = ConstructorParameters<typeof BlueLinky>[0];
+class Unauthorized extends Schema.TaggedError<Unauthorized>()("Unauthorized", {}) {}
+
+class Result extends Schema.Struct({ status: Schema.Literal("ok", "success") }) {
+  static Neutral = Result.make({ status: "ok" });
+  static Success = Result.make({ status: "success" });
+}
+
+type BlueLinkyConfig = ConstructorParameters<typeof BlueLinky>[0];
 type VehicleStartOptions = Parameters<NonNullable<Awaited<ReturnType<BlueLinky["getVehicle"]>>>["start"]>[0];
 
-const Location = Effect.gen(function* () {
-  const { fetchLocation } = yield* BlueLinkyService;
-  return HttpServerResponse.text(JSON.stringify(yield* fetchLocation, null, 2));
-});
+const Location = () =>
+  Effect.gen(function* () {
+    const { fetchLocation } = yield* BlueLinkyService;
+    console.log(JSON.stringify(yield* fetchLocation, null, 2));
+    return Result.Success;
+  });
 
 class BlueLinkyService extends Effect.Service<BlueLinkyService>()("BlueLinkyService", {
   effect: Effect.gen(function* () {
-    const config: BlueLinkConfig = {
+    const config: BlueLinkyConfig = {
       username: yield* Config.string("BLUELINKY_USERNAME"),
       password: yield* Config.string("BLUELINKY_PASSWORD"),
       brand: yield* Config.literal("hyundai", "kia")("BLUELINKY_BRAND"),
@@ -73,39 +83,60 @@ class BlueLinkyService extends Effect.Service<BlueLinkyService>()("BlueLinkyServ
   }),
 }) {}
 
-const withAuthorization = HttpMiddleware.make((app) =>
+class BaseApi extends HttpApiGroup.make("base").add(HttpApiEndpoint.get("root", "/").addSuccess(Result)) {}
+
+class AuthorizationMiddleware extends HttpApiMiddleware.Tag<AuthorizationMiddleware>()("AuthorizationMiddleware", {
+  failure: Unauthorized,
+  security: { bearer: HttpApiSecurity.bearer },
+}) {}
+
+const AuthorizationMiddlewareLive = Layer.effect(
+  AuthorizationMiddleware,
   Effect.gen(function* () {
-    const { headers } = yield* HttpServerRequest.HttpServerRequest;
     const secret = yield* Config.string("SHARED_SECRET");
-
-    const token = pipe(
-      headers,
-      Headers.get("Authorization"),
-      Option.map((header) => header.split("Bearer ").at(1)),
-      Option.flatMap(Option.fromNullable),
-    );
-
-    if (Option.isSome(token) && token.value === secret) {
-      return yield* app;
-    }
-
-    return HttpServerResponse.text("Unauthorized", { status: 401 });
+    return AuthorizationMiddleware.of({
+      bearer: (bearerToken) =>
+        Effect.gen(function* () {
+          if (Redacted.value(bearerToken) !== secret) {
+            yield* Effect.fail(Unauthorized.make());
+          }
+        }),
+    });
   }),
 );
 
-const router = HttpRouter.empty.pipe(
-  HttpRouter.post("/location", Location),
-  HttpRouter.use(withAuthorization),
-  HttpRouter.get("/", HttpServerResponse.text("Ok")),
+class AuthorizedApi extends HttpApiGroup.make("authorized")
+  .add(HttpApiEndpoint.post("location", "/location").addSuccess(Result))
+  .middleware(AuthorizationMiddleware) {}
+
+class AppApi extends HttpApi.empty
+  //
+  .add(BaseApi)
+  .add(AuthorizedApi)
+  .addError(Unauthorized, { status: 401 }) {}
+
+// Live
+
+const AuthorizedApiLive = HttpApiBuilder.group(AppApi, "authorized", (handlers) =>
+  handlers.handle("location", Location),
 );
 
-router.pipe(
-  Effect.tapError(Effect.logError),
-  Effect.catchAllCause((cause) => HttpServerResponse.text(Cause.pretty(cause), { status: 500 })),
-  HttpServer.serve(),
-  HttpServer.withLogAddress,
-  Layer.provide(BlueLinkyService.Default),
-  Layer.provide(BunHttpServer.layer({ port: 3000 })),
-  Layer.launch,
-  BunRuntime.runMain,
+const BaseApiLive = HttpApiBuilder.group(AppApi, "base", (handlers) =>
+  handlers.handle("root", () => Effect.succeed(Result.Neutral)),
 );
+
+const AppApiLive = HttpApiBuilder.api(AppApi).pipe(
+  //
+  Layer.provide(BaseApiLive),
+  Layer.provide(AuthorizedApiLive),
+);
+
+const HttpLive = HttpApiBuilder.serve().pipe(
+  Layer.provide(AppApiLive),
+  Layer.provide(AuthorizationMiddlewareLive),
+  Layer.provide(BlueLinkyService.Default),
+  HttpServer.withLogAddress,
+  Layer.provide(BunHttpServer.layer({ port: 3000 })),
+);
+
+Layer.launch(HttpLive).pipe(BunRuntime.runMain);
