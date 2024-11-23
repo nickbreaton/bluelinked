@@ -8,7 +8,7 @@ import {
   HttpServer,
 } from "@effect/platform";
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
-import { Array, Cause, Config, Effect, Layer, Option, pipe, Redacted, Schema } from "effect";
+import { Array, Config, Effect, Layer, pipe, Redacted, Schema } from "effect";
 import { BlueLinky } from "bluelinky";
 
 class Unauthorized extends Schema.TaggedError<Unauthorized>()("Unauthorized", {}) {}
@@ -21,10 +21,10 @@ class Result extends Schema.Struct({ status: Schema.Literal("ok", "success") }) 
 type BlueLinkyConfig = ConstructorParameters<typeof BlueLinky>[0];
 type VehicleStartOptions = Parameters<NonNullable<Awaited<ReturnType<BlueLinky["getVehicle"]>>>["start"]>[0];
 
-const Location = () =>
+const PingLive = () =>
   Effect.gen(function* () {
     const { fetchLocation } = yield* BlueLinkyService;
-    console.log(JSON.stringify(yield* fetchLocation, null, 2));
+    yield* fetchLocation;
     return Result.Success;
   });
 
@@ -106,7 +106,7 @@ const AuthorizationMiddlewareLive = Layer.effect(
 );
 
 class AuthorizedApi extends HttpApiGroup.make("authorized")
-  .add(HttpApiEndpoint.post("location", "/location").addSuccess(Result))
+  .add(HttpApiEndpoint.post("ping", "/ping").addSuccess(Result))
   .middleware(AuthorizationMiddleware) {}
 
 class AppApi extends HttpApi.empty
@@ -117,9 +117,7 @@ class AppApi extends HttpApi.empty
 
 // Live
 
-const AuthorizedApiLive = HttpApiBuilder.group(AppApi, "authorized", (handlers) =>
-  handlers.handle("location", Location),
-);
+const AuthorizedApiLive = HttpApiBuilder.group(AppApi, "authorized", (handlers) => handlers.handle("ping", PingLive));
 
 const BaseApiLive = HttpApiBuilder.group(AppApi, "base", (handlers) =>
   handlers.handle("root", () => Effect.succeed(Result.Neutral)),
