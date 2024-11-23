@@ -3,8 +3,8 @@
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
-    "deploy": "wrangler deploy src/index.ts"
+    "dev": "bun --watch src/local.ts",
+    "deploy": "wrangler deploy src/cloudflare.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

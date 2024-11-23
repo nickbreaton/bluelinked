@@ -124,28 +124,9 @@ const BaseApiLive = HttpApiBuilder.group(AppApi, "base", (handlers) =>
   handlers.handle("root", () => Effect.succeed(Result.Neutral)),
 );
 
-const AppApiLive = HttpApiBuilder.api(AppApi).pipe(
-  //
+export const AppApiLive = HttpApiBuilder.api(AppApi).pipe(
   Layer.provide(BaseApiLive),
   Layer.provide(AuthorizedApiLive),
   Layer.provide(AuthorizationMiddlewareLive),
   Layer.provide(BlueLinkyService.Default),
 );
-
-// const HttpLive = HttpApiBuilder.serve().pipe(
-//   Layer.provide(AppApiLive),
-//   Layer.provide(AuthorizationMiddlewareLive),
-//   Layer.provide(BlueLinkyService.Default),
-//   HttpServer.withLogAddress,
-//   Layer.provide(BunHttpServer.layer({ port: 3000 })),
-// );
-
-// const runtime = ManagedRuntime.make(AppApiLive);
-
-// Layer.launch(HttpLive).pipe(BunRuntime.runMain);
-
-const { handler } = HttpApiBuilder.toWebHandler(Layer.mergeAll(AppApiLive, HttpServer.layerContext));
-
-export default {
-  fetch: handler,
-};
