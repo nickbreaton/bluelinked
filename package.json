@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/local.ts",
-    "build": "bun build src/netlify.ts --target=node --outfile netlify/functions/index.ts"
+    "build": "bun build src/netlify.ts --target=node --outfile netlify/functions/index.js"
   },
   "devDependencies": {
     "@types/bun": "latest",
