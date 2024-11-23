@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/local.ts",
-    "deploy": "wrangler deploy src/cloudflare.ts"
+    "build": "bun build src/netlify.ts --target=node --outfile netlify/functions/index.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
