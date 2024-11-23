@@ -1,6 +1,6 @@
 import { HttpApiBuilder, HttpServer } from "@effect/platform";
 import { AppApiLive } from ".";
-import { Layer } from "effect";
+import { ConfigProvider, Layer } from "effect";
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
 
 HttpApiBuilder.serve().pipe(

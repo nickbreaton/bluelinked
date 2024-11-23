@@ -1,9 +1,15 @@
 import { HttpApiBuilder, HttpServer } from "@effect/platform";
-import { Layer } from "effect";
+import { Layer, ConfigProvider } from "effect";
 import { AppApiLive } from ".";
 
-const { handler } = HttpApiBuilder.toWebHandler(Layer.mergeAll(AppApiLive, HttpServer.layerContext));
-
 export default {
-  fetch: handler,
+  fetch(request: Request, env: Record<string, string>) {
+    const layer = Layer.mergeAll(AppApiLive, HttpServer.layerContext).pipe(
+      Layer.provide(Layer.setConfigProvider(ConfigProvider.fromJson(env))),
+    );
+
+    const { handler } = HttpApiBuilder.toWebHandler(layer);
+
+    return handler(request);
+  },
 };
