@@ -4,10 +4,11 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/local.ts",
-    "build": "bun build src/netlify.ts --target=node --outfile netlify/functions/index.js"
+    "build": "bun tsup src/netlify.ts -d netlify/functions --format esm"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "tsup": "^8.3.5",
     "wrangler": "^3.90.0"
   },
   "peerDependencies": {
