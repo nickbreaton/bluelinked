@@ -1,5 +1,4 @@
 name = "shortkeys"
-type = "javascript"
 
 workers_dev = true
 compatibility_date = "2024-11-23"
