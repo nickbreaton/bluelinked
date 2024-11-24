@@ -46,12 +46,17 @@ const PingLive = () =>
 const StartLive = () =>
   Effect.gen(function* () {
     const { start } = yield* BlueLinkyService;
-    yield* start({
-      airTemperature: 74,
-      defrost: true,
-      driverSeatHeater: SeatTemperature.High,
-      passengerSeatHeater: SeatTemperature.High,
-    });
+
+    yield* pipe(
+      start({
+        airTemperature: 74,
+        defrost: true,
+        driverSeatHeater: SeatTemperature.High,
+        passengerSeatHeater: SeatTemperature.High,
+      }),
+      Effect.orDie,
+    );
+
     return Result.Success;
   });
 
@@ -133,8 +138,6 @@ class BlueLinkyService extends Effect.Service<BlueLinkyService>()("BlueLinkyServ
           if (res.status !== 200) {
             yield* Effect.dieMessage(yield* res.text);
           }
-
-          return Result.Success;
         }),
     };
   }),
