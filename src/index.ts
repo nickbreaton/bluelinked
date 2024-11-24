@@ -9,7 +9,7 @@ import {
   HttpServerResponse,
 } from "@effect/platform";
 import { Array, Config, Effect, Layer, pipe, Redacted, Schema } from "effect";
-import type { BlueLinky } from "bluelinky";
+import { BlueLinky } from "bluelinky";
 
 class Unauthorized extends Schema.TaggedError<Unauthorized>()("Unauthorized", {}) {}
 
@@ -40,9 +40,6 @@ class BlueLinkyService extends Effect.Service<BlueLinkyService>()("BlueLinkyServ
 
     const fetchClient = yield* pipe(
       Effect.gen(function* () {
-        globalThis.WeakMap ??= globalThis.Map;
-        const { default: BlueLinky } = yield* Effect.promise(() => import("bluelinky"));
-
         const client = new BlueLinky(config);
         yield* Effect.logInfo("> BlueLinky client created");
         yield* Effect.async((resolve) => {
