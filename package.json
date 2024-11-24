@@ -4,7 +4,9 @@
   "scripts": {
     "dev": "bun --watch src/platforms/bun.ts",
     "build": "bun tsup src/platforms/netlify.ts -d netlify/functions --format esm",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run src",
+    "ci": "bun run typecheck && bun run build && bun run test"
   },
   "devDependencies": {
     "@effect/vitest": "^0.13.16",
