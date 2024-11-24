@@ -1,6 +1,5 @@
 {
   "name": "shortkeys",
-  "module": "src/index.ts",
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/platforms/bun.ts",
@@ -10,11 +9,9 @@
     "@effect/vitest": "^0.13.16",
     "@types/bun": "latest",
     "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
     "vitest": "^2.1.5",
     "wrangler": "^3.90.0"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
   },
   "dependencies": {
     "@effect/platform": "^0.69.24",
