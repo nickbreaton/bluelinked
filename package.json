@@ -7,8 +7,10 @@
     "build": "bun tsup src/netlify.ts -d netlify/functions --format esm"
   },
   "devDependencies": {
+    "@effect/vitest": "^0.13.16",
     "@types/bun": "latest",
     "tsup": "^8.3.5",
+    "vitest": "^2.1.5",
     "wrangler": "^3.90.0"
   },
   "peerDependencies": {
