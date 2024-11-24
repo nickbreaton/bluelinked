@@ -5,11 +5,10 @@ import {
   HttpApiGroup,
   HttpApiMiddleware,
   HttpApiSecurity,
-  HttpServer,
   HttpApp,
+  HttpServerResponse,
 } from "@effect/platform";
-// import { BunContext, BunHttpServer, BunRuntime } from "@effect/platform-bun";
-import { Array, Config, Effect, Layer, ManagedRuntime, pipe, Redacted, Schema } from "effect";
+import { Array, Config, Effect, Layer, pipe, Redacted, Schema } from "effect";
 import type { BlueLinky } from "bluelinky";
 
 class Unauthorized extends Schema.TaggedError<Unauthorized>()("Unauthorized", {}) {}
@@ -87,7 +86,16 @@ class BlueLinkyService extends Effect.Service<BlueLinkyService>()("BlueLinkyServ
   }),
 }) {}
 
-class BaseApi extends HttpApiGroup.make("base").add(HttpApiEndpoint.get("root", "/").addSuccess(Result)) {}
+export class MyHeaderMiddleware extends HttpApiMiddleware.Tag<MyHeaderMiddleware>()("MyHeaderMiddleware") {}
+
+export const MyHeaderMiddlewareLive = Layer.succeed(
+  MyHeaderMiddleware,
+  HttpApp.appendPreResponseHandler((_req, res) => HttpServerResponse.setHeader(res, "tenantId", "123")),
+);
+
+class BaseApi extends HttpApiGroup.make("base")
+  .add(HttpApiEndpoint.get("root", "/").addSuccess(Result))
+  .middleware(MyHeaderMiddleware) {}
 
 class AuthorizationMiddleware extends HttpApiMiddleware.Tag<AuthorizationMiddleware>()("AuthorizationMiddleware", {
   failure: Unauthorized,
@@ -131,5 +139,6 @@ export const AppApiLive = HttpApiBuilder.api(AppApi).pipe(
   Layer.provide(BaseApiLive),
   Layer.provide(AuthorizedApiLive),
   Layer.provide(AuthorizationMiddlewareLive),
+  Layer.provide(MyHeaderMiddlewareLive),
   Layer.provide(BlueLinkyService.Default),
 );

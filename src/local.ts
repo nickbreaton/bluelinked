@@ -1,11 +1,11 @@
-import { HttpApiBuilder, HttpServer } from "@effect/platform";
+import { HttpApiBuilder, HttpMiddleware, HttpServer } from "@effect/platform";
 import { AppApiLive } from ".";
-import { ConfigProvider, Layer } from "effect";
+import { Layer } from "effect";
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
 
-HttpApiBuilder.serve().pipe(
-  Layer.provide(AppApiLive),
+HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
   HttpServer.withLogAddress,
+  Layer.provide(AppApiLive),
   Layer.provide(BunHttpServer.layer({ port: 3000 })),
   Layer.launch,
   BunRuntime.runMain,
