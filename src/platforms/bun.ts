@@ -1,5 +1,5 @@
 import { HttpApiBuilder, HttpMiddleware, HttpServer } from "@effect/platform";
-import { AppApiLive } from ".";
+import { AppApiLive } from "..";
 import { Layer } from "effect";
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
 

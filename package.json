@@ -3,8 +3,8 @@
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/local.ts",
-    "build": "bun tsup src/netlify.ts -d netlify/functions --format esm"
+    "dev": "bun --watch src/platforms/bun.ts",
+    "build": "bun tsup src/platforms/netlify.ts -d netlify/functions --format esm"
   },
   "devDependencies": {
     "@effect/vitest": "^0.13.16",

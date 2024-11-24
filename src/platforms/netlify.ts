@@ -1,6 +1,6 @@
 import { HttpApiBuilder, HttpMiddleware, HttpServer } from "@effect/platform";
-import { Layer, ConfigProvider } from "effect";
-import { AppApiLive } from ".";
+import { Layer } from "effect";
+import { AppApiLive } from "..";
 
 export const config = {
   path: "/*",
