@@ -1,4 +1,5 @@
 import {
+  FetchHttpClient,
   HttpApi,
   HttpApiBuilder,
   HttpApiEndpoint,
@@ -6,6 +7,8 @@ import {
   HttpApiMiddleware,
   HttpApiSecurity,
   HttpApp,
+  HttpBody,
+  HttpClient,
   HttpServerResponse,
 } from "@effect/platform";
 import { Array, Config, Effect, Layer, pipe, Redacted, Schema } from "effect";
@@ -19,12 +22,36 @@ class Result extends Schema.Struct({ status: Schema.Literal("ok", "success") }) 
 }
 
 type BlueLinkyConfig = ConstructorParameters<typeof BlueLinky>[0];
-type VehicleStartOptions = Parameters<NonNullable<Awaited<ReturnType<BlueLinky["getVehicle"]>>>["start"]>[0];
+
+export enum SeatTemperature {
+  High = 8,
+  Medium = 7,
+  Low = 6,
+}
+
+export interface StartOptions {
+  airTemperature: number;
+  defrost: boolean;
+  driverSeatHeater: SeatTemperature;
+  passengerSeatHeater: SeatTemperature;
+}
 
 const PingLive = () =>
   Effect.gen(function* () {
     const { fetchLocation } = yield* BlueLinkyService;
     yield* fetchLocation;
+    return Result.Success;
+  });
+
+const StartLive = () =>
+  Effect.gen(function* () {
+    const { start } = yield* BlueLinkyService;
+    yield* start({
+      airTemperature: 74,
+      defrost: true,
+      driverSeatHeater: SeatTemperature.High,
+      passengerSeatHeater: SeatTemperature.High,
+    });
     return Result.Success;
   });
 
@@ -74,10 +101,40 @@ class BlueLinkyService extends Effect.Service<BlueLinkyService>()("BlueLinkyServ
         yield* Effect.logInfo(`< Fetched location`);
         return location;
       }),
-      start: (options: VehicleStartOptions) =>
+      start: (options: StartOptions) =>
         Effect.gen(function* () {
           const vehicle = yield* fetchVehicle;
-          yield* Effect.promise(() => vehicle.start(options));
+          const client = yield* HttpClient.HttpClient;
+
+          const headers: Record<string, unknown> =
+            // @ts-ignore
+            vehicle.getDefaultHeaders();
+
+          const requestConfig = {
+            airTemp: { unit: 1, value: String(options.airTemperature) },
+            defrost: options.defrost,
+            heating1: +options.defrost,
+            seatHeaterVentInfo: {
+              drvSeatHeatState: options.driverSeatHeater,
+              astSeatHeatState: options.passengerSeatHeater,
+            },
+            Ims: 0,
+            airCtrl: 1,
+            username: vehicle.userConfig.username,
+            vin: vehicle.vehicleConfig.vin,
+            igniOnDuration: 10,
+          };
+
+          const res = yield* client.post("https://api.telematics.hyundaiusa.com/ac/v2/rcs/rsc/start", {
+            headers: { ...headers, offset: "-4", "Content-Type": "application/json" },
+            body: yield* HttpBody.json(requestConfig),
+          });
+
+          if (res.status !== 200) {
+            yield* Effect.dieMessage(yield* res.text);
+          }
+
+          return Result.Success;
         }),
     };
   }),
@@ -116,6 +173,7 @@ const AuthorizationMiddlewareLive = Layer.effect(
 
 class AuthorizedApi extends HttpApiGroup.make("authorized")
   .add(HttpApiEndpoint.post("ping", "/ping").addSuccess(Result))
+  .add(HttpApiEndpoint.post("start", "/start").addSuccess(Result))
   .middleware(AuthorizationMiddleware) {}
 
 class AppApi extends HttpApi.empty
@@ -126,7 +184,9 @@ class AppApi extends HttpApi.empty
 
 // Live
 
-const AuthorizedApiLive = HttpApiBuilder.group(AppApi, "authorized", (handlers) => handlers.handle("ping", PingLive));
+const AuthorizedApiLive = HttpApiBuilder.group(AppApi, "authorized", (handlers) =>
+  handlers.handle("ping", PingLive).handle("start", StartLive),
+);
 
 const BaseApiLive = HttpApiBuilder.group(AppApi, "base", (handlers) =>
   handlers.handle("root", () => Effect.succeed(Result.Neutral)),
@@ -137,5 +197,6 @@ export const AppApiLive = HttpApiBuilder.api(AppApi).pipe(
   Layer.provide(AuthorizedApiLive),
   Layer.provide(AuthorizationMiddlewareLive),
   Layer.provide(MyHeaderMiddlewareLive),
+  Layer.provide(FetchHttpClient.layer),
   Layer.provide(BlueLinkyService.Default),
 );
