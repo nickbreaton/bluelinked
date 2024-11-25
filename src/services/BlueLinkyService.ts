@@ -28,6 +28,8 @@ export class BlueLinkyService extends Effect.Service<BlueLinkyService>()("BlueLi
       autoLogin: false,
     };
 
+    const httpClient = yield* HttpClient.HttpClient;
+
     const fetchClient = yield* pipe(
       Effect.gen(function* () {
         const client = new BlueLinky(config);
@@ -65,7 +67,6 @@ export class BlueLinkyService extends Effect.Service<BlueLinkyService>()("BlueLi
       start: (options: StartOptions) =>
         Effect.gen(function* () {
           const vehicle = yield* fetchVehicle;
-          const client = yield* HttpClient.HttpClient;
 
           const headers: Record<string, unknown> =
             // @ts-ignore
@@ -86,7 +87,7 @@ export class BlueLinkyService extends Effect.Service<BlueLinkyService>()("BlueLi
             igniOnDuration: 10,
           };
 
-          const res = yield* client.post("https://api.telematics.hyundaiusa.com/ac/v2/rcs/rsc/start", {
+          const res = yield* httpClient.post("https://api.telematics.hyundaiusa.com/ac/v2/rcs/rsc/start", {
             headers: { ...headers, offset: "-4", "Content-Type": "application/json" },
             body: yield* HttpBody.json(requestConfig),
           });
