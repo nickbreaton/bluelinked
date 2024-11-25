@@ -61,6 +61,6 @@ export const AppApiLive = HttpApiBuilder.api(AppApi).pipe(
   Layer.provide(BaseApiLive),
   Layer.provide(AuthorizedApiLive),
   Layer.provide(AuthorizationMiddlewareLive),
-  Layer.provide(FetchHttpClient.layer),
   Layer.provide(BlueLinkyService.Default),
+  Layer.provide(FetchHttpClient.layer),
 );
