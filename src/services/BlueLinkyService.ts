@@ -88,6 +88,7 @@ const make = Effect.gen(function* () {
         igniOnDuration: 10,
       };
 
+      yield* Effect.logInfo("Sending remote start request");
       const res = yield* httpClient.post("https://api.telematics.hyundaiusa.com/ac/v2/rcs/rsc/start", {
         headers: { ...headers, offset: "-4", "Content-Type": "application/json" },
         body: yield* HttpBody.json(requestConfig),
@@ -96,6 +97,7 @@ const make = Effect.gen(function* () {
       if (res.status !== 200) {
         return yield* Effect.die(yield* res.text);
       }
+      yield* Effect.logInfo("Remote start request accepted").pipe(Effect.annotateLogs({ status: res.status }));
     }),
   };
 });
