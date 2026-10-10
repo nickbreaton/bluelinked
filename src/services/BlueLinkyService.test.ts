@@ -1,6 +1,6 @@
 import { it, expect } from "@effect/vitest";
-import { ConfigProvider, Effect, Layer, pipe } from "effect";
-import { HttpBody, HttpClient, HttpClientRequest, HttpClientResponse } from "@effect/platform";
+import { ConfigProvider, Effect, Layer } from "effect";
+import { HttpClient, HttpClientRequest, HttpClientResponse } from "effect/http";
 import { BlueLinkyService, SeatTemperature } from "./BlueLinkyService";
 import { vi } from "vitest";
 import { BlueLinky } from "bluelinky";
@@ -11,10 +11,10 @@ const mocks = vi.hoisted(() => {
     location: vi.fn().mockResolvedValue({}),
     getDefaultHeaders: vi.fn(() => ({ "X-Bluelink-Header": "1" })),
     userConfig: {
-      vin: "VIN",
+      username: "test-user",
     },
     vehicleConfig: {
-      username: "test-user",
+      vin: "VIN",
     },
   };
   return {
@@ -27,17 +27,16 @@ const mocks = vi.hoisted(() => {
 
 vi.mock("bluelinky", () => {
   return {
-    BlueLinky: vi.fn(() => ({
-      login: mocks.login,
-      getVehicles: mocks.getVehicles,
-    })),
+    BlueLinky: vi.fn(function () {
+      return { login: mocks.login, getVehicles: mocks.getVehicles };
+    }),
   };
 });
 
-const mockLayer = BlueLinkyService.Default.pipe(
+const mockLayer = BlueLinkyService.layer.pipe(
   Layer.provide(
-    Layer.setConfigProvider(
-      ConfigProvider.fromJson({
+    ConfigProvider.layer(
+      ConfigProvider.fromUnknown({
         BLUELINKY_USERNAME: "test-user",
         BLUELINKY_PASSWORD: "test-password",
         BLUELINKY_BRAND: "hyundai",
@@ -69,10 +68,17 @@ it.effect("lazy initializes and logs in", () =>
     });
     expect(mocks.login).toHaveBeenCalled();
     expect(mocks.vehicle.location).toHaveBeenCalled();
+
+    yield* fetchLocation;
+
+    expect(BlueLinky).toHaveBeenCalledOnce();
+    expect(mocks.login).toHaveBeenCalledOnce();
+    expect(mocks.getVehicles).toHaveBeenCalledOnce();
+    expect(mocks.vehicle.location).toHaveBeenCalledTimes(2);
   }).pipe(Effect.provide(mockLayer)),
 );
 
-it.scoped("can remote start", () =>
+it.effect("can remote start", () =>
   Effect.gen(function* () {
     const { start } = yield* BlueLinkyService;
 

@@ -1,11 +1,11 @@
-import { HttpApiMiddleware, HttpApiSecurity } from "@effect/platform";
+import { HttpApiMiddleware, HttpApiSecurity } from "effect/http-api";
 import { UnauthorizedError } from "../lib/responses";
 import { Config, Effect, Layer, Redacted } from "effect";
 
-export class AuthorizationMiddleware extends HttpApiMiddleware.Tag<AuthorizationMiddleware>()(
+export class AuthorizationMiddleware extends HttpApiMiddleware.Service<AuthorizationMiddleware>()(
   "AuthorizationMiddleware",
   {
-    failure: UnauthorizedError,
+    error: UnauthorizedError,
     security: { bearer: HttpApiSecurity.bearer },
   },
 ) {}
@@ -13,14 +13,14 @@ export class AuthorizationMiddleware extends HttpApiMiddleware.Tag<Authorization
 export const AuthorizationMiddlewareLive = Layer.effect(
   AuthorizationMiddleware,
   Effect.gen(function* () {
-    const secret = yield* Config.string("SHARED_SECRET");
+    const secret = yield* Config.String("SHARED_SECRET");
     return AuthorizationMiddleware.of({
-      bearer: (bearerToken) =>
-        Effect.gen(function* () {
-          if (Redacted.value(bearerToken) !== secret) {
-            yield* Effect.fail(UnauthorizedError.make());
-          }
-        }),
+      bearer: Effect.fn(function* (httpEffect, { credential }) {
+        if (Redacted.value(credential) !== secret) {
+          return yield* new UnauthorizedError({});
+        }
+        return yield* httpEffect;
+      }),
     });
   }),
 );

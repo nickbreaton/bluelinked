@@ -1,31 +1,36 @@
-import { FetchHttpClient, HttpApi, HttpApiBuilder, HttpApiEndpoint, HttpApiGroup } from "@effect/platform";
+import { FetchHttpClient } from "effect/http";
+import { HttpApi, HttpApiBuilder, HttpApiEndpoint, HttpApiGroup } from "effect/http-api";
 
 import { Effect, Layer, pipe } from "effect";
-import { Result, UnauthorizedError } from "./lib/responses";
+import { Result } from "./lib/responses";
 import { BlueLinkyService, SeatTemperature } from "./services/BlueLinkyService";
 import { AuthorizationMiddleware, AuthorizationMiddlewareLive } from "./middleware/authorization";
 
 // Definition
 
 class BaseApi extends HttpApiGroup.make("base") // ↩
-  .add(HttpApiEndpoint.get("root", "/").addSuccess(Result)) {}
+  .add(HttpApiEndpoint.get("root", "/", { success: Result })) {}
 
 class AuthorizedApi extends HttpApiGroup.make("authorized")
-  .add(HttpApiEndpoint.post("ping", "/ping").addSuccess(Result))
-  .add(HttpApiEndpoint.post("start", "/start").addSuccess(Result))
+  .add(HttpApiEndpoint.post("ping", "/ping", { success: Result }))
+  .add(HttpApiEndpoint.post("start", "/start", { success: Result }))
   .middleware(AuthorizationMiddleware) {}
 
-export class AppApi extends HttpApi.empty // ↩
+export class AppApi extends HttpApi.make("AppApi") // ↩
   .add(BaseApi)
-  .add(AuthorizedApi)
-  .addError(UnauthorizedError, { status: 401 }) {}
+  .add(AuthorizedApi) {}
 
 // Live
 
-const AuthorizedApiLive = HttpApiBuilder.group(AppApi, "authorized", (handlers) =>
-  handlers // ↩
-    .handle("ping", PingLive)
-    .handle("start", StartLive),
+const AuthorizedApiLive = HttpApiBuilder.group(
+  AppApi,
+  "authorized",
+  Effect.fn(function* (handlers) {
+    const service = yield* BlueLinkyService;
+    return handlers // ↩
+      .handle("ping", PingLive(service))
+      .handle("start", StartLive(service));
+  }),
 );
 
 const BaseApiLive = HttpApiBuilder.group(AppApi, "base", (handlers) =>
@@ -33,17 +38,14 @@ const BaseApiLive = HttpApiBuilder.group(AppApi, "base", (handlers) =>
     .handle("root", () => Effect.succeed(Result.Neutral)),
 );
 
-const PingLive = () =>
-  Effect.gen(function* () {
-    const { fetchLocation } = yield* BlueLinkyService;
+const PingLive = ({ fetchLocation }: BlueLinkyService["Service"]) =>
+  Effect.fn("ping")(function* () {
     yield* fetchLocation;
     return Result.Success;
   });
 
-const StartLive = () =>
-  Effect.gen(function* () {
-    const { start } = yield* BlueLinkyService;
-
+const StartLive = ({ start }: BlueLinkyService["Service"]) =>
+  Effect.fn("start")(function* () {
     yield* pipe(
       start({
         airTemperature: 74,
@@ -57,10 +59,13 @@ const StartLive = () =>
     return Result.Success;
   });
 
-export const AppApiLive = HttpApiBuilder.api(AppApi).pipe(
+export const AppApiHandlers = HttpApiBuilder.layer(AppApi).pipe(
   Layer.provide(BaseApiLive),
   Layer.provide(AuthorizedApiLive),
   Layer.provide(AuthorizationMiddlewareLive),
-  Layer.provide(BlueLinkyService.Default),
+);
+
+export const AppApiLive = AppApiHandlers.pipe(
+  Layer.provide(BlueLinkyService.layer),
   Layer.provide(FetchHttpClient.layer),
 );

@@ -9,17 +9,17 @@
     "ci": "bun run typecheck && bun run build && bun run test"
   },
   "devDependencies": {
-    "@effect/vitest": "^0.13.16",
+    "@effect/vitest": "^4.0.2",
     "@types/bun": "latest",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.5",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.3",
     "wrangler": "^3.90.0"
   },
   "dependencies": {
-    "@effect/platform": "^0.69.24",
-    "@effect/platform-bun": "^0.49.26",
+    "@effect/platform-bun": "^4.0.2",
     "bluelinky": "^8.3.1",
-    "effect": "^3.10.15"
+    "effect": "^4.0.2"
   }
 }

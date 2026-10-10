@@ -1,15 +1,11 @@
-import { HttpApiBuilder, HttpMiddleware, HttpServer } from "@effect/platform";
-import { Layer } from "effect";
+import { HttpRouter, HttpServer } from "effect/http";
 import { AppApiLive } from "../router";
+import { Layer } from "effect";
 
 export const config = {
   path: "/*",
 };
 
-const layer = Layer.mergeAll(AppApiLive, HttpServer.layerContext);
-
-const { handler } = HttpApiBuilder.toWebHandler(layer, {
-  middleware: HttpMiddleware.logger,
-});
+const { handler } = HttpRouter.toWebHandler(AppApiLive.pipe(Layer.provide(HttpServer.layerServices)));
 
 export default handler;
