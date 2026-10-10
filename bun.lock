@@ -6,7 +6,7 @@
       "name": "shortkeys",
       "dependencies": {
         "@effect/platform-bun": "^4.0.2",
-        "bluelinky": "^8.3.1",
+        "bluelinky": "^10.0.0",
         "effect": "^4.0.2",
       },
       "devDependencies": {
@@ -315,7 +315,7 @@
 
     "bluebird": ["bluebird@3.7.2", "", {}, "sha512-XpNj6GDQzdfW+r2Wnn7xiSAd7TM3jzkxGXBGTtWKuSXv1xUV+azxAm8jdWZN06QTQk+2N2XB9jRDkvbmQmcRtg=="],
 
-    "bluelinky": ["bluelinky@8.4.0", "", { "dependencies": { "got": "^9.6.0", "push-receiver": "^2.1.1", "tough-cookie": "^4.0.0", "undici": "^6.10.2", "winston": "^3.3.3" } }, "sha512-65Zzb7MhtUc16kSRavK7lenX6UrZRxp9YGKxyJmD4PmwPCMr/X9ODq/zj5b790JStxwjTPG8RotrU6eXgcRwGQ=="],
+    "bluelinky": ["bluelinky@10.0.0", "", { "dependencies": { "got": "^9.6.0", "push-receiver": "^2.1.1", "tough-cookie": "^4.0.0", "undici": "^6.10.2", "winston": "^3.3.3" } }, "sha512-9saokfDz4iMBPVu26BdJdxdJloG/ykkltvWFCeGFsbpeMYR0yQo3rxgsrT4rEuIldxgOvD7Tv3QaZKTExOrreg=="],
 
     "bun-types": ["bun-types@1.4.2", "", { "dependencies": { "@types/node": "*" } }, "sha512-bxV1FgK7yBIzjRe5zBozIM4Bem11ZJcCXSrjWRG3YWLt8yFDePu4cLjpebO8OvPeIE9trbyPF4fuj3Cia4Fj3w=="],
 

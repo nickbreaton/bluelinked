@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@effect/platform-bun": "^4.0.2",
-    "bluelinky": "^8.3.1",
+    "bluelinky": "^10.0.0",
     "effect": "^4.0.2"
   }
 }
