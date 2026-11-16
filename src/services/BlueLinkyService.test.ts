@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => {
   const vehicle = {
     vin: vi.fn().mockReturnValue("VIN"),
     location: vi.fn().mockResolvedValue({}),
+    lock: vi.fn().mockResolvedValue("success"),
     getDefaultHeaders: vi.fn(() => ({ "X-Bluelink-Header": "1" })),
     userConfig: {
       username: "test-user",
@@ -93,5 +94,15 @@ it.effect("can remote start", () =>
 
     expect(request.url).toEqual("https://api.telematics.hyundaiusa.com/ac/v2/rcs/rsc/start");
     expect(request.headers).toEqual(expect.objectContaining({ "x-bluelink-header": "1" }));
+  }).pipe(Effect.provide(mockLayer)),
+);
+
+it.effect("can lock the vehicle", () =>
+  Effect.gen(function* () {
+    const { lock } = yield* BlueLinkyService;
+
+    yield* lock();
+
+    expect(mocks.vehicle.lock).toHaveBeenCalledOnce();
   }).pipe(Effect.provide(mockLayer)),
 );

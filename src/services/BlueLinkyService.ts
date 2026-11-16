@@ -59,6 +59,12 @@ const make = Effect.gen(function* () {
   );
 
   return {
+    lock: Effect.fn("BlueLinkyService.lock")(function* () {
+      const vehicle = yield* fetchVehicle;
+      yield* Effect.logInfo("Sending lock request");
+      yield* Effect.promise(() => vehicle.lock());
+      yield* Effect.logInfo("Lock request accepted");
+    }),
     fetchLocation: Effect.gen(function* () {
       const vehicle = yield* fetchVehicle;
       yield* Effect.logInfo(`> Fetching location`);

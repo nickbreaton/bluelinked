@@ -14,6 +14,7 @@ class BaseApi extends HttpApiGroup.make("base") // ↩
 class AuthorizedApi extends HttpApiGroup.make("authorized")
   .add(HttpApiEndpoint.post("ping", "/ping", { success: Result }))
   .add(HttpApiEndpoint.post("start", "/start", { success: Result }))
+  .add(HttpApiEndpoint.post("lock", "/lock", { success: Result }))
   .middleware(AuthorizationMiddleware) {}
 
 export class AppApi extends HttpApi.make("AppApi") // ↩
@@ -29,7 +30,8 @@ const AuthorizedApiLive = HttpApiBuilder.group(
     const service = yield* BlueLinkyService;
     return handlers // ↩
       .handle("ping", PingLive(service))
-      .handle("start", StartLive(service));
+      .handle("start", StartLive(service))
+      .handle("lock", LockLive(service));
   }),
 );
 
@@ -41,6 +43,12 @@ const BaseApiLive = HttpApiBuilder.group(AppApi, "base", (handlers) =>
 const PingLive = ({ fetchLocation }: BlueLinkyService["Service"]) =>
   Effect.fn("ping")(function* () {
     yield* fetchLocation;
+    return Result.Success;
+  });
+
+const LockLive = ({ lock }: BlueLinkyService["Service"]) =>
+  Effect.fn("lock")(function* () {
+    yield* lock();
     return Result.Success;
   });
 

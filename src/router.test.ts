@@ -14,10 +14,11 @@ const fetchLocation = vi.fn(() =>
   }),
 );
 const start = vi.fn(() => Effect.succeed(undefined));
+const lock = vi.fn(() => Effect.succeed(undefined));
 
 const { handler, dispose } = HttpRouter.toWebHandler(
   AppApiHandlers.pipe(
-    Layer.provide(Layer.succeed(BlueLinkyService, { fetchLocation: Effect.suspend(fetchLocation), start })),
+    Layer.provide(Layer.succeed(BlueLinkyService, { fetchLocation: Effect.suspend(fetchLocation), start, lock })),
     Layer.provide(ConfigProvider.layer(ConfigProvider.fromUnknown({ SHARED_SECRET: "test-secret" }))),
     Layer.provide(HttpServer.layerServices),
   ),
@@ -34,7 +35,7 @@ it("serves the public root without authentication", async () => {
   expect(fetchLocation).not.toHaveBeenCalled();
 });
 
-it.each(["/ping", "/start"])("rejects missing and invalid credentials for %s", async (path) => {
+it.each(["/ping", "/start", "/lock"])("rejects missing and invalid credentials for %s", async (path) => {
   for (const headers of [new Headers(), new Headers({ Authorization: "Bearer wrong-secret" })]) {
     const response = await handler(new Request(`http://localhost${path}`, { method: "POST", headers }));
     expect(response.status).toBe(401);
@@ -42,10 +43,11 @@ it.each(["/ping", "/start"])("rejects missing and invalid credentials for %s", a
   }
   expect(fetchLocation).not.toHaveBeenCalled();
   expect(start).not.toHaveBeenCalled();
+  expect(lock).not.toHaveBeenCalled();
 });
 
-it("runs authenticated ping and start handlers", async () => {
-  for (const path of ["/ping", "/start"]) {
+it("runs authenticated ping, start, and lock handlers", async () => {
+  for (const path of ["/ping", "/start", "/lock"]) {
     const response = await handler(
       new Request(`http://localhost${path}`, {
         method: "POST",
@@ -56,6 +58,7 @@ it("runs authenticated ping and start handlers", async () => {
     expect(await response.json()).toEqual({ status: "success" });
   }
   expect(fetchLocation).toHaveBeenCalledOnce();
+  expect(lock).toHaveBeenCalledOnce();
   expect(start).toHaveBeenCalledExactlyOnceWith({
     airTemperature: 74,
     defrost: true,
