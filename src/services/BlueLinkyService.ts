@@ -1,6 +1,6 @@
 import { Array, Config, Context, Effect, Layer, Option, pipe } from "effect";
 import { BlueLinky } from "bluelinky";
-import { HttpBody, HttpClient } from "effect/http";
+import { Headers, HttpBody, HttpClient, HttpClientRequest } from "effect/http";
 
 export type BlueLinkyConfig = ConstructorParameters<typeof BlueLinky>[0];
 
@@ -58,7 +58,44 @@ const make = Effect.gen(function* () {
     Effect.cached,
   );
 
+  const post = Effect.fn("BlueLinkyService.post")(function* (
+    path: string,
+    options: HttpClientRequest.Options.NoUrl = {},
+  ) {
+    const vehicle = yield* fetchVehicle;
+    const defaultHeaders: Headers.Input =
+      // @ts-ignore
+      vehicle.getDefaultHeaders();
+
+    const response = yield* httpClient.post(`https://api.telematics.hyundaiusa.com${path}`, {
+      ...options,
+      headers: pipe(
+        Headers.fromInput(defaultHeaders),
+        Headers.set("content-type", "application/json"),
+        Headers.merge(Headers.fromInput(options.headers)),
+      ),
+    });
+
+    if (response.status !== 200) {
+      return yield* Effect.die(yield* response.text);
+    }
+    return response;
+  });
+
   return {
+    lights: Effect.fn("BlueLinkyService.lights")(function* () {
+      const vehicle = yield* fetchVehicle;
+      yield* Effect.logInfo("Sending lights-only request");
+
+      const res = yield* post("/ac/v2/rcs/rhl/light", {
+        body: yield* HttpBody.json({
+          userName: vehicle.userConfig.username,
+          vin: vehicle.vehicleConfig.vin,
+        }),
+      });
+
+      yield* Effect.logInfo("Lights-only request accepted").pipe(Effect.annotateLogs({ status: res.status }));
+    }),
     lock: Effect.fn("BlueLinkyService.lock")(function* () {
       const vehicle = yield* fetchVehicle;
       yield* Effect.logInfo("Sending lock request");
@@ -74,10 +111,6 @@ const make = Effect.gen(function* () {
     }),
     start: Effect.fn("BlueLinkyService.start")(function* (options: StartOptions) {
       const vehicle = yield* fetchVehicle;
-
-      const headers: Record<string, unknown> =
-        // @ts-ignore
-        vehicle.getDefaultHeaders();
 
       const requestConfig = {
         airTemp: { unit: 1, value: String(options.airTemperature) },
@@ -95,14 +128,12 @@ const make = Effect.gen(function* () {
       };
 
       yield* Effect.logInfo("Sending remote start request");
-      const res = yield* httpClient.post("https://api.telematics.hyundaiusa.com/ac/v2/rcs/rsc/start", {
-        headers: { ...headers, offset: "-4", "Content-Type": "application/json" },
+
+      const res = yield* post("/ac/v2/rcs/rsc/start", {
+        headers: { offset: "-4" },
         body: yield* HttpBody.json(requestConfig),
       });
 
-      if (res.status !== 200) {
-        return yield* Effect.die(yield* res.text);
-      }
       yield* Effect.logInfo("Remote start request accepted").pipe(Effect.annotateLogs({ status: res.status }));
     }),
   };

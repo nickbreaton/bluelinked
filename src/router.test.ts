@@ -15,10 +15,11 @@ const fetchLocation = vi.fn(() =>
 );
 const start = vi.fn(() => Effect.succeed(undefined));
 const lock = vi.fn(() => Effect.succeed(undefined));
+const lights = vi.fn(() => Effect.succeed(undefined));
 
 const { handler, dispose } = HttpRouter.toWebHandler(
   AppApiHandlers.pipe(
-    Layer.provide(Layer.succeed(BlueLinkyService, { fetchLocation: Effect.suspend(fetchLocation), start, lock })),
+    Layer.provide(Layer.succeed(BlueLinkyService, { fetchLocation: Effect.suspend(fetchLocation), start, lock, lights })),
     Layer.provide(ConfigProvider.layer(ConfigProvider.fromUnknown({ SHARED_SECRET: "test-secret" }))),
     Layer.provide(HttpServer.layerServices),
   ),
@@ -35,7 +36,7 @@ it("serves the public root without authentication", async () => {
   expect(fetchLocation).not.toHaveBeenCalled();
 });
 
-it.each(["/ping", "/start", "/lock"])("rejects missing and invalid credentials for %s", async (path) => {
+it.each(["/ping", "/start", "/lock", "/lights"])("rejects missing and invalid credentials for %s", async (path) => {
   for (const headers of [new Headers(), new Headers({ Authorization: "Bearer wrong-secret" })]) {
     const response = await handler(new Request(`http://localhost${path}`, { method: "POST", headers }));
     expect(response.status).toBe(401);
@@ -44,10 +45,11 @@ it.each(["/ping", "/start", "/lock"])("rejects missing and invalid credentials f
   expect(fetchLocation).not.toHaveBeenCalled();
   expect(start).not.toHaveBeenCalled();
   expect(lock).not.toHaveBeenCalled();
+  expect(lights).not.toHaveBeenCalled();
 });
 
-it("runs authenticated ping, start, and lock handlers", async () => {
-  for (const path of ["/ping", "/start", "/lock"]) {
+it("runs authenticated ping, start, lock, and lights handlers", async () => {
+  for (const path of ["/ping", "/start", "/lock", "/lights"]) {
     const response = await handler(
       new Request(`http://localhost${path}`, {
         method: "POST",
@@ -59,6 +61,7 @@ it("runs authenticated ping, start, and lock handlers", async () => {
   }
   expect(fetchLocation).toHaveBeenCalledOnce();
   expect(lock).toHaveBeenCalledOnce();
+  expect(lights).toHaveBeenCalledOnce();
   expect(start).toHaveBeenCalledExactlyOnceWith({
     airTemperature: 74,
     defrost: true,

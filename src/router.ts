@@ -15,6 +15,7 @@ class AuthorizedApi extends HttpApiGroup.make("authorized")
   .add(HttpApiEndpoint.post("ping", "/ping", { success: Result }))
   .add(HttpApiEndpoint.post("start", "/start", { success: Result }))
   .add(HttpApiEndpoint.post("lock", "/lock", { success: Result }))
+  .add(HttpApiEndpoint.post("lights", "/lights", { success: Result }))
   .middleware(AuthorizationMiddleware) {}
 
 export class AppApi extends HttpApi.make("AppApi") // ↩
@@ -31,7 +32,8 @@ const AuthorizedApiLive = HttpApiBuilder.group(
     return handlers // ↩
       .handle("ping", PingLive(service))
       .handle("start", StartLive(service))
-      .handle("lock", LockLive(service));
+      .handle("lock", LockLive(service))
+      .handle("lights", LightsLive(service));
   }),
 );
 
@@ -49,6 +51,12 @@ const PingLive = ({ fetchLocation }: BlueLinkyService["Service"]) =>
 const LockLive = ({ lock }: BlueLinkyService["Service"]) =>
   Effect.fn("lock")(function* () {
     yield* lock();
+    return Result.Success;
+  });
+
+const LightsLive = ({ lights }: BlueLinkyService["Service"]) =>
+  Effect.fn("lights")(function* () {
+    yield* lights().pipe(Effect.orDie);
     return Result.Success;
   });
 

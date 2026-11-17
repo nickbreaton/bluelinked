@@ -93,7 +93,7 @@ it.effect("can remote start", () =>
     const request: HttpClientRequest.HttpClientRequest = mocks.request.mock.lastCall?.[0];
 
     expect(request.url).toEqual("https://api.telematics.hyundaiusa.com/ac/v2/rcs/rsc/start");
-    expect(request.headers).toEqual(expect.objectContaining({ "x-bluelink-header": "1" }));
+    expect(request.headers).toEqual(expect.objectContaining({ "x-bluelink-header": "1", "content-type": "application/json" }));
   }).pipe(Effect.provide(mockLayer)),
 );
 
@@ -104,5 +104,25 @@ it.effect("can lock the vehicle", () =>
     yield* lock();
 
     expect(mocks.vehicle.lock).toHaveBeenCalledOnce();
+  }).pipe(Effect.provide(mockLayer)),
+);
+
+it.effect("flashes lights using the lights-only endpoint", () =>
+  Effect.gen(function* () {
+    const { lights } = yield* BlueLinkyService;
+
+    yield* lights();
+
+    const request: HttpClientRequest.HttpClientRequest = mocks.request.mock.lastCall?.[0];
+    expect(request.method).toBe("POST");
+    expect(request.url).toBe("https://api.telematics.hyundaiusa.com/ac/v2/rcs/rhl/light");
+    expect(request.headers).toEqual(expect.objectContaining({ "x-bluelink-header": "1", "content-type": "application/json" }));
+    expect(request.body._tag).toBe("Uint8Array");
+    if (request.body._tag === "Uint8Array") {
+      expect(JSON.parse(new TextDecoder().decode(request.body.body))).toEqual({
+        userName: "test-user",
+        vin: "VIN",
+      });
+    }
   }).pipe(Effect.provide(mockLayer)),
 );
