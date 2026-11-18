@@ -66,6 +66,6 @@ it("runs authenticated ping, start, lock, and lights handlers", async () => {
     airTemperature: 74,
     defrost: true,
     driverSeatHeater: SeatTemperature.High,
-    passengerSeatHeater: SeatTemperature.High,
+    passengerSeatHeater: SeatTemperature.Low,
   });
 });

@@ -67,7 +67,7 @@ const StartLive = ({ start }: BlueLinkyService["Service"]) =>
         airTemperature: 74,
         defrost: true,
         driverSeatHeater: SeatTemperature.High,
-        passengerSeatHeater: SeatTemperature.High,
+        passengerSeatHeater: SeatTemperature.Low,
       }),
       Effect.orDie,
     );
